@@ -8,6 +8,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\HttpFoundation\RedirectResponse;
 
 class UrlController extends AbstractController
 {
@@ -41,8 +42,31 @@ class UrlController extends AbstractController
                 'error' => 'Non-existent hash.'
             ]);
         }
+        if ($url->getExpirationDate() < new \DateTimeImmutable()) {
+            return $this->json(['error' => 'URL has expired.'], 410);
+        }
         return $this->json([
             'url' => $url->getUrl()
         ]);
     }
+
+    /**
+     * @Route("/gourl", name="go_url")
+     */
+    public function goUrl(Request $request): RedirectResponse
+    {
+        /** @var UrlRepository $urlRepository */
+        $urlRepository = $this->getDoctrine()->getRepository(Url::class);
+        $url = $urlRepository->findOneByHash($request->get('hash'));
+        if (empty ($url)) {
+            return $this->json([
+                'error' => 'Non-existent hash.'
+            ]);
+        }
+        $decodedUrl = $url->getUrl();
+        $redirectUrl = $this->generateUrl('encode_url', ['url' => $decodedUrl]);
+
+        return $this->redirect($redirectUrl);
+    }
+    
 }

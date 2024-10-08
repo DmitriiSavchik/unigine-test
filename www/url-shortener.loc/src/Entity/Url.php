@@ -10,6 +10,7 @@ use Doctrine\ORM\Mapping as ORM;
  */
 class Url
 {
+    private int $lifetimeInSeconds = 5;
     /**
      * @ORM\Id
      * @ORM\GeneratedValue
@@ -32,10 +33,21 @@ class Url
      */
     private $createdDate;
 
+    /**
+     * @ORM\Column(name="expiration_date", type="datetime_immutable", nullable=true)
+     */
+    private $expirationDate;
+
+    /**
+     * @ORM\Column(type="boolean")
+     */
+    private $sent = false;
+
     public function __construct()
     {
         $date = new \DateTimeImmutable();
         $this->setCreatedDate($date);
+        $this->setExpirationDate($date->add(new \DateInterval('PT2M')));
         $this->setHash($date->format('YmdHis'));
     }
 
@@ -78,5 +90,36 @@ class Url
         $this->createdDate = $createdDate;
 
         return $this;
+    }
+
+    public function getExpirationDate(): ?\DateTimeImmutable
+    {
+        return $this->expirationDate;
+    }
+
+    public function setExpirationDate(\DateTimeImmutable $expirationDate): self
+    {
+        $this->expirationDate = $expirationDate;
+
+        return $this;
+    }
+    public function getSent(): ?bool
+    {
+        return $this->sent;
+    }
+
+    public function setSent(bool $sent): self
+    {
+        $this->sent = $sent;
+
+        return $this;
+    }
+    public function isActive(): bool
+    {
+        $now = new \DateTimeImmutable();
+
+        $diff = $now->getTimestamp() - $this->getCreatedDate()->getTimestamp();
+
+        return $diff < $this->lifetimeInSeconds;
     }
 }

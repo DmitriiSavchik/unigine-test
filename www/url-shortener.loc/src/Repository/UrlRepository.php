@@ -28,4 +28,13 @@ class UrlRepository extends ServiceEntityRepository
             ->getOneOrNullResult()
         ;
     }
+    public function findNewUrls(): array
+    {
+        return $this->createQueryBuilder('u')
+            ->andWhere('u.sent = :sent')
+            ->setParameter('sent', false)
+            ->getQuery()
+            ->getResult();
+    }
+
 }
